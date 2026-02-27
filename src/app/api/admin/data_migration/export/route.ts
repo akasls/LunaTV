@@ -7,6 +7,7 @@ import { gzip } from 'zlib';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { SimpleCrypto } from '@/lib/crypto';
 import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma.db';
 import { CURRENT_VERSION } from '@/lib/version';
 
 export const runtime = 'nodejs';
@@ -121,14 +122,10 @@ export async function POST(req: NextRequest) {
 // 辅助函数：获取用户密码（通过数据库直接访问）
 async function getUserPassword(username: string): Promise<string | null> {
   try {
-    // 使用 Redis 存储的直接访问方法
-    const storage = (db as any).storage;
-    if (storage && typeof storage.client?.get === 'function') {
-      const passwordKey = `u:${username}:pwd`;
-      const password = await storage.client.get(passwordKey);
-      return password;
-    }
-    return null;
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+    return user?.password || null;
   } catch (error) {
     console.error(`获取用户 ${username} 密码失败:`, error);
     return null;
