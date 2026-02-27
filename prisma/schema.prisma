@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  username       String   @id
+  password       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  playRecords    PlayRecord[]
+  favorites      Favorite[]
+  searchHistories SearchHistory[]
+  skipConfigs    SkipConfig[]
+}
+
+model PlayRecord {
+  id             String   @id @default(cuid())
+  username       String
+  user           User     @relation(fields: [username], references: [username], onDelete: Cascade)
+  key            String   // combined source+id
+  sourceName     String   @map("source_name")
+  title          String
+  cover          String
+  year           String
+  index          Int
+  totalEpisodes  Int      @map("total_episodes")
+  playTime       Float    @map("play_time")
+  totalTime      Float    @map("total_time")
+  saveTime       Float    @map("save_time")
+  searchTitle    String   @map("search_title")
+
+  @@unique([username, key])
+  @@index([username])
+}
+
+model Favorite {
+  id             String   @id @default(cuid())
+  username       String
+  user           User     @relation(fields: [username], references: [username], onDelete: Cascade)
+  key            String
+  sourceName     String   @map("source_name")
+  totalEpisodes  Int      @map("total_episodes")
+  title          String
+  year           String
+  cover          String
+  saveTime       Float    @map("save_time")
+  searchTitle    String   @map("search_title")
+  origin         String?
+
+  @@unique([username, key])
+  @@index([username])
+}
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  username  String
+  user      User     @relation(fields: [username], references: [username], onDelete: Cascade)
+  keyword   String
+  updatedAt DateTime @updatedAt
+
+  @@unique([username, keyword])
+  @@index([username])
+}
+
+model SkipConfig {
+  id          String   @id @default(cuid())
+  username    String
+  user        User     @relation(fields: [username], references: [username], onDelete: Cascade)
+  key         String
+  enable      Boolean
+  introTime   Int      @map("intro_time")
+  outroTime   Int      @map("outro_time")
+
+  @@unique([username, key])
+  @@index([username])
+}
+
+model GlobalConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

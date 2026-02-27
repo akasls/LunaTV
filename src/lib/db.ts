@@ -1,41 +1,15 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { AdminConfig } from './admin.types';
-import { KvrocksStorage } from './kvrocks.db';
-import { RedisStorage } from './redis.db';
+import { PrismaStorage } from './prisma.db';
 import { Favorite, IStorage, PlayRecord, SkipConfig } from './types';
-import { UpstashRedisStorage } from './upstash.db';
-
-// storage type 常量: 'localstorage' | 'redis' | 'upstash'，默认 'localstorage'
-const STORAGE_TYPE =
-  (process.env.NEXT_PUBLIC_STORAGE_TYPE as
-    | 'localstorage'
-    | 'redis'
-    | 'upstash'
-    | 'kvrocks'
-    | undefined) || 'localstorage';
-
-// 创建存储实例
-function createStorage(): IStorage {
-  switch (STORAGE_TYPE) {
-    case 'redis':
-      return new RedisStorage();
-    case 'upstash':
-      return new UpstashRedisStorage();
-    case 'kvrocks':
-      return new KvrocksStorage();
-    case 'localstorage':
-    default:
-      return null as unknown as IStorage;
-  }
-}
 
 // 单例存储实例
 let storageInstance: IStorage | null = null;
 
 function getStorage(): IStorage {
   if (!storageInstance) {
-    storageInstance = createStorage();
+    storageInstance = new PrismaStorage();
   }
   return storageInstance;
 }
@@ -169,24 +143,16 @@ export class DbManager {
 
   // 获取全部用户名
   async getAllUsers(): Promise<string[]> {
-    if (typeof (this.storage as any).getAllUsers === 'function') {
-      return (this.storage as any).getAllUsers();
-    }
-    return [];
+    return this.storage.getAllUsers();
   }
 
   // ---------- 管理员配置 ----------
   async getAdminConfig(): Promise<AdminConfig | null> {
-    if (typeof (this.storage as any).getAdminConfig === 'function') {
-      return (this.storage as any).getAdminConfig();
-    }
-    return null;
+    return this.storage.getAdminConfig();
   }
 
   async saveAdminConfig(config: AdminConfig): Promise<void> {
-    if (typeof (this.storage as any).setAdminConfig === 'function') {
-      await (this.storage as any).setAdminConfig(config);
-    }
+    await this.storage.setAdminConfig(config);
   }
 
   // ---------- 跳过片头片尾配置 ----------
@@ -195,10 +161,7 @@ export class DbManager {
     source: string,
     id: string
   ): Promise<SkipConfig | null> {
-    if (typeof (this.storage as any).getSkipConfig === 'function') {
-      return (this.storage as any).getSkipConfig(userName, source, id);
-    }
-    return null;
+    return this.storage.getSkipConfig(userName, source, id);
   }
 
   async setSkipConfig(
@@ -207,9 +170,7 @@ export class DbManager {
     id: string,
     config: SkipConfig
   ): Promise<void> {
-    if (typeof (this.storage as any).setSkipConfig === 'function') {
-      await (this.storage as any).setSkipConfig(userName, source, id, config);
-    }
+    await this.storage.setSkipConfig(userName, source, id, config);
   }
 
   async deleteSkipConfig(
@@ -217,27 +178,18 @@ export class DbManager {
     source: string,
     id: string
   ): Promise<void> {
-    if (typeof (this.storage as any).deleteSkipConfig === 'function') {
-      await (this.storage as any).deleteSkipConfig(userName, source, id);
-    }
+    await this.storage.deleteSkipConfig(userName, source, id);
   }
 
   async getAllSkipConfigs(
     userName: string
   ): Promise<{ [key: string]: SkipConfig }> {
-    if (typeof (this.storage as any).getAllSkipConfigs === 'function') {
-      return (this.storage as any).getAllSkipConfigs(userName);
-    }
-    return {};
+    return this.storage.getAllSkipConfigs(userName);
   }
 
   // ---------- 数据清理 ----------
   async clearAllData(): Promise<void> {
-    if (typeof (this.storage as any).clearAllData === 'function') {
-      await (this.storage as any).clearAllData();
-    } else {
-      throw new Error('存储类型不支持清空数据操作');
-    }
+    await this.storage.clearAllData();
   }
 }
 
